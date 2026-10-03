@@ -157,11 +157,13 @@ async def handle_message(update, context):
 
     texte_signal = (
         f'📊 **SIGNAL TRADING ACTIF**\n\n'
+        f'💱 **ACTIF :** AUD/CAD (OTC)\n'
         f'📍 **HEURE D’ENTRÉE:** {signal_time_str}\n'
+        f'⏳ *Place ton trade 50 secondes avant la minute!*\n\n'
         f'🎯 **OPTION :** {action_text}\n'
-        f'{tendance_emoji} **MATINGAL 1 :** {matingal1_str}\n'
-        f'{tendance_emoji} **MATINGAL 2 :** {matingal2_str}\n'
-        f'{tendance_emoji} **MATINGAL 3 :** {matingal3_str}\n'
+        f'{tendance_emoji} **MARTINGALE 1 :** {matingal1_str}\n'
+        f'{tendance_emoji} **MARTINGALE 2 :** {matingal2_str}\n'
+        f'{tendance_emoji} **MARTINGALE 3 :** {matingal3_str}\n'
         f'⚡ **FIABILITÉ :** {fiabilite}%'
     )
 
@@ -201,12 +203,16 @@ async def handle_message(update, context):
   # Alerte Admin avec 3 Boutons Interactifs
   admin_keyboard = [
       [
-          InlineKeyboardButton('✅ Valider l\'accès', callback_data=f'val_{user_id}'),
-          InlineKeyboardButton('❌ Mauvais code', callback_data=f'err_{user_id}')
+          InlineKeyboardButton(
+              '✅ Valider l\'accès', callback_data=f'val_{user_id}'
+          ),
+          InlineKeyboardButton('❌ Mauvais code', callback_data=f'err_{user_id}'),
       ],
       [
-          InlineKeyboardButton('💰 Rappel Recharge', callback_data=f'recharge_{user_id}')
-      ]
+          InlineKeyboardButton(
+              '💰 Rappel Recharge', callback_data=f'recharge_{user_id}'
+          )
+      ],
   ]
   admin_markup = InlineKeyboardMarkup(admin_keyboard)
 
@@ -226,14 +232,14 @@ async def handle_message(update, context):
 async def admin_callback(update, context):
   query = update.callback_query
   if update.effective_user.id != TON_ID_ADMIN:
-    await query.answer("Accès refusé.", show_alert=True)
+    await query.answer('Accès refusé.', show_alert=True)
     return
 
   await query.answer()
   data = query.data
 
-  if data.startswith("val_"):
-    user_id_target = int(data.split("_")[1])
+  if data.startswith('val_'):
+    user_id_target = int(data.split('_')[1])
     valider_utilisateur(user_id_target)
 
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
@@ -242,45 +248,51 @@ async def admin_callback(update, context):
     try:
       await context.bot.send_message(
           chat_id=user_id_target,
-          text='✅ Félicitations ! Ton ID a été validé. Tu peux maintenant accéder aux signaux.',
+          text=(
+              '✅ Félicitations ! Ton ID a été validé. Tu peux maintenant'
+              ' accéder aux signaux.'
+          ),
           reply_markup=markup,
       )
     except Exception as e:
-      print(f"Erreur envoi validation utilisateur: {e}")
+      print(f'Erreur envoi validation utilisateur: {e}')
 
     await query.edit_message_text(
-        text=query.message.text + "\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**",
-        parse_mode='Markdown'
+        text=query.message.text + '\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**',
+        parse_mode='Markdown',
     )
 
-  elif data.startswith("err_"):
-    user_id_target = int(data.split("_")[1])
+  elif data.startswith('err_'):
+    user_id_target = int(data.split('_')[1])
     try:
       await context.bot.send_message(
           chat_id=user_id_target,
           text='❌ Ce ID n’est pas inscrit avec le code COK225.',
       )
     except Exception as e:
-      print(f"Erreur envoi message erreur: {e}")
+      print(f'Erreur envoi message erreur: {e}')
 
     await query.edit_message_text(
-        text=query.message.text + "\n\n🔴 **STATUT : MAUVAIS CODE NOTIFIÉ**",
-        parse_mode='Markdown'
+        text=query.message.text + '\n\n🔴 **STATUT : MAUVAIS CODE NOTIFIÉ**',
+        parse_mode='Markdown',
     )
 
-  elif data.startswith("recharge_"):
-    user_id_target = int(data.split("_")[1])
+  elif data.startswith('recharge_'):
+    user_id_target = int(data.split('_')[1])
     try:
       await context.bot.send_message(
           chat_id=user_id_target,
-          text='⚠️ Tu es bien inscrit avec le code COK225 ! Recharge toi maintenant pour activer 🚀',
+          text=(
+              '⚠️ Tu es bien inscrit avec le code COK225 ! Recharge toi'
+              ' maintenant pour activer 🚀'
+          ),
       )
     except Exception as e:
-      print(f"Erreur envoi message recharge: {e}")
+      print(f'Erreur envoi message recharge: {e}')
 
     await query.edit_message_text(
-        text=query.message.text + "\n\n🟡 **STATUT : RAPPEL RECHARGE ENVOYÉ**",
-        parse_mode='Markdown'
+        text=query.message.text + '\n\n🟡 **STATUT : RAPPEL RECHARGE ENVOYÉ**',
+        parse_mode='Markdown',
     )
 
 
