@@ -141,8 +141,8 @@ async def handle_message(update, context):
     matingal2_str = (base_time + timedelta(minutes=4)).strftime('%H:%M')
     matingal3_str = (base_time + timedelta(minutes=6)).strftime('%H:%M')
 
-    seed = (target_hour * 60) + target_minute
-    is_higher = seed % 2 == 0
+    # Choix 100% aléatoire (Higher ou Lower)
+    is_higher = random.choice([True, False])
 
     fiabilite = round(random.uniform(85.0, 99.9), 1)
 
@@ -198,7 +198,7 @@ async def handle_message(update, context):
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
 
-  # Alerte Admin avec Boutons Interactifs
+  # Alerte Admin avec 3 Boutons Interactifs
   admin_keyboard = [
       [
           InlineKeyboardButton('✅ Valider l\'accès', callback_data=f'val_{user_id}'),
