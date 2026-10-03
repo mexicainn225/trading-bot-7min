@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 import os
 import random
 from threading import Thread
-import database  # Utilise ton fichier database.py d'origine
 from flask import Flask, render_template, request
+from supabase import Client, create_client
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -17,13 +17,60 @@ from telegram.ext import (
     filters,
 )
 
+# Configuration Flask pour Render
 app = Flask(__name__, template_folder='templates', static_folder='static')
 TOKEN = os.environ.get('TOKEN')
 TON_ID_ADMIN = 5724620019  # ID Admin configuré
 
+# Récupération automatique des clés Supabase depuis les variables d'environnement de Render
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 # Images sur ton dépôt GitHub
 PHOTO_HIGHER = 'IMG_6204.jpeg'  # Image verte (Higher)
 PHOTO_LOWER = 'IMG_6203.jpeg'  # Image rouge (Lower)
+
+
+# ==========================================
+# FONCTIONS SUPABASE DIRECTES
+# ==========================================
+def est_valide(user_id):
+  try:
+    response = (
+        supabase.table('users').select('*').eq('user_id', str(user_id)).execute()
+    )
+    data = response.data
+    if data and len(data) > 0:
+      user_info = data[0]
+      # Vérifie si l'utilisateur est validé (is_vip à True ou status active)
+      if user_info.get('is_vip') == True or user_info.get('status') == 'active':
+        return True
+    return False
+  except Exception as e:
+    print(f'Erreur Supabase est_valide: {e}')
+    return False
+
+
+def ajouter_utilisateur(user_id, id_1win):
+  try:
+    supabase.table('users').upsert({
+        'user_id': str(user_id),
+        'id_1win': str(id_1win),
+        'status': 'pending',
+        'is_vip': False,
+    }).execute()
+  except Exception as e:
+    print(f'Erreur Supabase ajouter_utilisateur: {e}')
+
+
+def valider_utilisateur(user_id):
+  try:
+    supabase.table('users').update(
+        {'status': 'active', 'is_vip': True}
+    ).eq('user_id', str(user_id)).execute()
+  except Exception as e:
+    print(f'Erreur Supabase valider_utilisateur: {e}')
 
 
 @app.route('/')
@@ -31,11 +78,13 @@ def home():
   return render_template('index.html')
 
 
+# ==========================================
+# GESTION DU BOT TELEGRAM
+# ==========================================
 async def start(update, context):
   user_id = update.effective_user.id
 
-  # Si l'utilisateur est déjà validé, on lui affiche le clavier principal avec les boutons
-  if database.est_valide(user_id):
+  if est_valide(user_id):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_signal = KeyboardButton('📊 OBTENIR UN SIGNAL')
     btn_stats = KeyboardButton('📈 STATISTIQUES')
@@ -63,9 +112,8 @@ async def handle_message(update, context):
   user_id = update.effective_user.id
   message_text = update.message.text
 
-  # Si l'utilisateur clique sur le bouton pour obtenir un signal
   if message_text == '📊 OBTENIR UN SIGNAL':
-    if not database.est_valide(user_id):
+    if not est_valide(user_id):
       await update.message.reply_text(
           '⛔ **ACCÈS RESTREINT**\n\nTu dois d’abord envoyer ton ID 1win valide'
           ' pour débloquer les signaux.',
@@ -98,7 +146,6 @@ async def handle_message(update, context):
     seed = (target_hour * 60) + target_minute
     is_higher = seed % 2 == 0
 
-    # Fiabilité aléatoire entre 85% et 99%
     fiabilite = round(random.uniform(85.0, 99.9), 1)
 
     if is_higher:
@@ -137,7 +184,7 @@ async def handle_message(update, context):
     return
 
   elif message_text == '📈 STATISTIQUES':
-    if not database.est_valide(user_id):
+    if not est_valide(user_id):
       await update.message.reply_text('⛔ Accès restreint.')
       return
     await update.message.reply_text(
@@ -146,14 +193,14 @@ async def handle_message(update, context):
     )
     return
 
-  # Sinon, on considère que c'est l'ID 1win envoyé par l'utilisateur
-  database.ajouter_utilisateur(user_id, message_text)
+  # Enregistrement de l'ID 1win dans Supabase
+  ajouter_utilisateur(user_id, message_text)
 
   await update.message.reply_text(
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
 
-  # Prévenir l'admin
+  # Alerte Admin
   await context.bot.send_message(
       chat_id=TON_ID_ADMIN,
       text=(
@@ -164,21 +211,18 @@ async def handle_message(update, context):
 
 
 async def valider(update, context):
-  # Vérification de sécurité : seul l'admin peut valider
   if update.effective_user.id != TON_ID_ADMIN:
     return
 
   if context.args:
     user_id_a_valider = int(context.args[0])
-    database.valider_utilisateur(user_id_a_valider)
+    valider_utilisateur(user_id_a_valider)
 
-    # Clavier principal envoyé à l'utilisateur validé
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_signal = KeyboardButton('📊 OBTENIR UN SIGNAL')
     btn_stats = KeyboardButton('📈 STATISTIQUES')
     markup.add(btn_signal, btn_stats)
 
-    # Envoi du message de validation avec le clavier des signaux
     await context.bot.send_message(
         chat_id=user_id_a_valider,
         text=(
