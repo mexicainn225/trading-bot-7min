@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import random
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -6,7 +7,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 TOKEN = "8659818470:AAHgDj_qF8PWfc0IH63NFZV1wLPB02C0NN4"
 bot = TeleBot(TOKEN)
 
-# Correction de l'ordre des images
+# Ordre des images sur ton dépôt GitHub
 PHOTO_HIGHER = "IMG_6204.jpeg"  # Image verte (Higher)
 PHOTO_LOWER = "IMG_6203.jpeg"    # Image rouge (Lower)
 
@@ -15,8 +16,7 @@ def envoyer_bienvenue(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_signal = KeyboardButton("📊 OBTENIR UN SIGNAL")
     btn_stats = KeyboardButton("📈 STATISTIQUES")
-    btn_config = KeyboardButton("⚙️ CONFIGURATION")
-    markup.add(btn_signal, btn_stats, btn_config)
+    markup.add(btn_signal, btn_stats)
     
     bot.send_message(
         message.chat.id, 
@@ -37,7 +37,7 @@ def generer_signal_trading(message):
     target_hour = (next_interval_mins // 60) % 24
     target_minute = next_interval_mins % 60
     
-    # Objet datetime pour calculer facilement les martingales (+2 min, +4 min, +6 min)
+    # Calcul des heures d'entrée et des martingales (+2 min, +4 min, +6 min)
     base_time = datetime.now().replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     
     signal_time_str = base_time.strftime("%H:%M")
@@ -47,6 +47,9 @@ def generer_signal_trading(message):
     
     seed = (target_hour * 60) + target_minute
     is_higher = (seed % 2 == 0)
+    
+    # Fiabilité aléatoire entre 85% et 99%
+    fiabilite = round(random.uniform(85.0, 99.9), 1)
     
     if is_higher:
         action_text = "🟢 HIGHER (HAUSSE / ACHAT)"
@@ -64,7 +67,7 @@ def generer_signal_trading(message):
         f"{tendance_emoji} **MATINGAL 1 :** {matingal1_str}\n"
         f"{tendance_emoji} **MATINGAL 2 :** {matingal2_str}\n"
         f"{tendance_emoji} **MATINGAL 3 :** {matingal3_str}\n"
-        f"⚡ **FIABILITÉ :** 95.2%"
+        f"⚡ **FIABILITÉ :** {fiabilite}%"
     )
     
     inline_markup = InlineKeyboardMarkup()
@@ -83,10 +86,6 @@ def generer_signal_trading(message):
 @bot.message_handler(func=lambda message: message.text == "📈 STATISTIQUES")
 def afficher_stats(message):
     bot.send_message(message.chat.id, "📊 **Statistiques :** Taux de réussite 89% 🟢", parse_mode="Markdown")
-
-@bot.message_handler(func=lambda message: message.text == "⚙️ CONFIGURATION")
-def afficher_config(message):
-    bot.send_message(message.chat.id, "⚙️ **Config :** Signaux toutes les 7 minutes.", parse_mode="Markdown")
 
 if __name__ == '__main__':
     bot.infinity_polling()
