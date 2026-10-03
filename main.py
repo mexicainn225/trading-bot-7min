@@ -84,7 +84,7 @@ async def start(update, context):
   user_id = update.effective_user.id
 
   if est_valide(user_id):
-    keyboard = [[KeyboardButton('📊 OBTENIR UN SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await update.message.reply_text(
@@ -109,7 +109,7 @@ async def handle_message(update, context):
   user_id = update.effective_user.id
   message_text = update.message.text
 
-  if message_text == '📊 OBTENIR UN SIGNAL':
+  if message_text == '📊 NEW SIGNAL':
     if not est_valide(user_id):
       await update.message.reply_text(
           '⛔ **ACCÈS RESTREINT**\n\nTu dois d’abord envoyer ton ID 1win valide'
