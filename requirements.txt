@@ -1,2 +1,4 @@
-pyTelegramBotAPI
+Flask
 supabase
+python-telegram-bot
+requests
