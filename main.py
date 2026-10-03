@@ -22,9 +22,9 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 TOKEN = os.environ.get('TOKEN')
 TON_ID_ADMIN = 5724620019  # ID Admin configuré
 
-# Récupération automatique des clés Supabase depuis les variables d'environnement de Render
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+# Informations Supabase intégrées directement
+SUPABASE_URL = 'https://uyruufvdezefffimcped.supabase.co/'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5cnV1ZnZkZXplZmZmaW1jcGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzkwMTAsImV4cCI6MjA5NzY1NTAxMH0.JNm1sOBUTvjl1m1OXmQVkOh4z5dFkDk-_qieJU1gVC8'
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Images sur ton dépôt GitHub
@@ -43,7 +43,6 @@ def est_valide(user_id):
     data = response.data
     if data and len(data) > 0:
       user_info = data[0]
-      # Vérifie si l'utilisateur est validé (is_vip à True ou status active)
       if user_info.get('is_vip') == True or user_info.get('status') == 'active':
         return True
     return False
