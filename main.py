@@ -84,10 +84,8 @@ async def start(update, context):
   user_id = update.effective_user.id
 
   if est_valide(user_id):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_signal = KeyboardButton('📊 OBTENIR UN SIGNAL')
-    btn_stats = KeyboardButton('📈 STATISTIQUES')
-    markup.add(btn_signal, btn_stats)
+    keyboard = [[KeyboardButton('📊 OBTENIR UN SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await update.message.reply_text(
         '🤖 **Re-bonjour ! Ton accès VIP est actif.**\n\nClique sur le bouton'
@@ -217,10 +215,8 @@ async def valider(update, context):
     user_id_a_valider = int(context.args[0])
     valider_utilisateur(user_id_a_valider)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_signal = KeyboardButton('📊 OBTENIR UN SIGNAL')
-    btn_stats = KeyboardButton('📈 STATISTIQUES')
-    markup.add(btn_signal, btn_stats)
+    keyboard = [[KeyboardButton('📊 OBTENIR UN SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await context.bot.send_message(
         chat_id=user_id_a_valider,
