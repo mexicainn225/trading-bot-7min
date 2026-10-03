@@ -2,14 +2,13 @@ from datetime import datetime, timedelta
 import os
 import random
 from threading import Thread
-import database  # Ton fichier database.py connecté à Supabase
+import database  # Utilise ton fichier database.py d'origine
 from flask import Flask, render_template, request
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
-    WebAppInfo,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -18,11 +17,8 @@ from telegram.ext import (
     filters,
 )
 
-# Configuration Flask pour Render
 app = Flask(__name__, template_folder='templates', static_folder='static')
-TOKEN = os.environ.get(
-    'TOKEN', '8659818470:AAHgDj_qF8PWfc0IH63NFZV1wLPB02C0NN4'
-)
+TOKEN = os.environ.get('TOKEN')
 TON_ID_ADMIN = 5724620019  # ID Admin configuré
 
 # Images sur ton dépôt GitHub
@@ -35,9 +31,6 @@ def home():
   return render_template('index.html')
 
 
-# ==========================================
-# GESTION DES COMMANDES / START / VALIDATION
-# ==========================================
 async def start(update, context):
   user_id = update.effective_user.id
 
@@ -56,21 +49,21 @@ async def start(update, context):
     )
   else:
     message = (
-        'Bienvenue sur le bot de signaux VIP 🚀\n\n'
+        'Bienvenue sur le bot 1win 🚀\n\n'
         'Pour débloquer tes accès, suis ces étapes :\n\n'
         '1️⃣ Inscris-toi ici : https://lkbb.cc/78634e\n'
-        '2️⃣ Utilise le code promo : **COK225**\n'
+        '2️⃣ Utilise le code promo : COK225\n'
         '3️⃣ Effectue une recharge sur ton compte.\n'
         '4️⃣ Envoie ton ID 1win ici pour validation.'
     )
-    await update.message.reply_text(message, parse_mode='Markdown')
+    await update.message.reply_text(message)
 
 
 async def handle_message(update, context):
   user_id = update.effective_user.id
   message_text = update.message.text
 
-  # Si l'utilisateur clique sur le bouton du menu des signaux
+  # Si l'utilisateur clique sur le bouton pour obtenir un signal
   if message_text == '📊 OBTENIR UN SIGNAL':
     if not database.est_valide(user_id):
       await update.message.reply_text(
@@ -80,7 +73,7 @@ async def handle_message(update, context):
       )
       return
 
-    # --- GÉNÉRATION DU SIGNAL (Toutes les 7 minutes + Martingales) ---
+    # --- CALCUL DU SIGNAL (Toutes les 7 min + Martingales) ---
     now = datetime.now()
     current_minutes = now.hour * 60 + now.minute
     remainder = current_minutes % 7
@@ -153,11 +146,11 @@ async def handle_message(update, context):
     )
     return
 
-  # Sinon, le message est considéré comme l'ID 1win envoyé par l'utilisateur
+  # Sinon, on considère que c'est l'ID 1win envoyé par l'utilisateur
   database.ajouter_utilisateur(user_id, message_text)
 
   await update.message.reply_text(
-      'ID reçu ! J’ai transmis ta demande à l’admin. Attends la validation. ✅'
+      "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
 
   # Prévenir l'admin
@@ -171,7 +164,7 @@ async def handle_message(update, context):
 
 
 async def valider(update, context):
-  # Sécurité : seul l'admin peut valider
+  # Vérification de sécurité : seul l'admin peut valider
   if update.effective_user.id != TON_ID_ADMIN:
     return
 
@@ -179,17 +172,18 @@ async def valider(update, context):
     user_id_a_valider = int(context.args[0])
     database.valider_utilisateur(user_id_a_valider)
 
-    # Création du clavier principal pour l'utilisateur validé
+    # Clavier principal envoyé à l'utilisateur validé
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_signal = KeyboardButton('📊 OBTENIR UN SIGNAL')
     btn_stats = KeyboardButton('📈 STATISTIQUES')
     markup.add(btn_signal, btn_stats)
 
+    # Envoi du message de validation avec le clavier des signaux
     await context.bot.send_message(
         chat_id=user_id_a_valider,
         text=(
             '✅ Félicitations ! Ton ID a été validé. Tu peux maintenant'
-            ' accéder aux signaux de trading.'
+            ' accéder aux signaux.'
         ),
         reply_markup=markup,
     )
@@ -204,15 +198,12 @@ def run_web():
 
 
 if __name__ == '__main__':
-  # Lancement du serveur Web Flask en arrière-plan pour Render
   Thread(target=run_web).start()
 
-  # Lancement du Bot Telegram v20+
   bot_app = ApplicationBuilder().token(TOKEN).build()
   bot_app.add_handler(CommandHandler('start', start))
   bot_app.add_handler(CommandHandler('valider', valider))
   bot_app.add_handler(
       MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
   )
-
   bot_app.run_polling()
