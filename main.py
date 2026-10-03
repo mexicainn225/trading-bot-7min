@@ -6,9 +6,9 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 TOKEN = "8659818470:AAHgDj_qF8PWfc0IH63NFZV1wLPB02C0NN4"
 bot = TeleBot(TOKEN)
 
-# Noms exacts des images sur ton dépôt GitHub
-PHOTO_HIGHER = "IMG_6203.jpeg"  # Image pour Higher (Hausse)
-PHOTO_LOWER = "IMG_6204.jpeg"    # Image pour Lower (Baisse)
+# Correction de l'ordre des images
+PHOTO_HIGHER = "IMG_6204.jpeg"  # Image verte (Higher)
+PHOTO_LOWER = "IMG_6203.jpeg"    # Image rouge (Lower)
 
 @bot.message_handler(commands=['start'])
 def envoyer_bienvenue(message):
@@ -51,7 +51,7 @@ def generer_signal_trading(message):
         photo_path = PHOTO_LOWER
         
     texte_signal = (
-        f"🚀 **SIGNAL TRADING ACTIF**\n\n"
+        f"📊 **SIGNAL TRADING ACTIF**\n\n"
         f"📍 **HEURE :** {signal_time_str}\n"
         f"🎯 **OPTION :** {action_text}\n"
         f"{tendance_emoji} **DURÉE :** 7 Minutes\n"
@@ -62,7 +62,6 @@ def generer_signal_trading(message):
     btn_platform = InlineKeyboardButton("💻 TRADER MAINTENANT", url="https://t.me/ton_lien_webapp")
     inline_markup.add(btn_platform)
     
-    # Envoi de l'image correspondante avec le texte et les boutons
     with open(photo_path, 'rb') as photo:
         bot.send_photo(
             chat_id, 
