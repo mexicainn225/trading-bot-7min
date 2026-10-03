@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -36,7 +36,14 @@ def generer_signal_trading(message):
     
     target_hour = (next_interval_mins // 60) % 24
     target_minute = next_interval_mins % 60
-    signal_time_str = f"{target_hour:02d}:{target_minute:02d}"
+    
+    # Objet datetime pour calculer facilement les martingales (+2 min, +4 min, +6 min)
+    base_time = datetime.now().replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+    
+    signal_time_str = base_time.strftime("%H:%M")
+    matingal1_str = (base_time + timedelta(minutes=2)).strftime("%H:%M")
+    matingal2_str = (base_time + timedelta(minutes=4)).strftime("%H:%M")
+    matingal3_str = (base_time + timedelta(minutes=6)).strftime("%H:%M")
     
     seed = (target_hour * 60) + target_minute
     is_higher = (seed % 2 == 0)
@@ -52,14 +59,16 @@ def generer_signal_trading(message):
         
     texte_signal = (
         f"📊 **SIGNAL TRADING ACTIF**\n\n"
-        f"📍 **HEURE :** {signal_time_str}\n"
+        f"📍 **HEURE D’ENTRÉE:** {signal_time_str}\n"
         f"🎯 **OPTION :** {action_text}\n"
-        f"{tendance_emoji} **DURÉE :** 7 Minutes\n"
+        f"{tendance_emoji} **MATINGAL 1 :** {matingal1_str}\n"
+        f"{tendance_emoji} **MATINGAL 2 :** {matingal2_str}\n"
+        f"{tendance_emoji} **MATINGAL 3 :** {matingal3_str}\n"
         f"⚡ **FIABILITÉ :** 95.2%"
     )
     
     inline_markup = InlineKeyboardMarkup()
-    btn_platform = InlineKeyboardButton("💻 TRADER MAINTENANT", url="https://t.me/ton_lien_webapp")
+    btn_platform = InlineKeyboardButton("💻 TRADER MAINTENANT", url="https://lkbb.cc/78634e")
     inline_markup.add(btn_platform)
     
     with open(photo_path, 'rb') as photo:
