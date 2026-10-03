@@ -2,8 +2,8 @@ from datetime import datetime
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-# Mets ton token ici entre les guillemets
-TOKEN = "TON_TOKEN_BOT"
+# Token intégré directement
+TOKEN = "8659818470:AAHgDj_qF8PWfc0IH63NFZV1wLPB02C0NN4"
 bot = TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
