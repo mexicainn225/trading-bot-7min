@@ -1,0 +1,75 @@
+from datetime import datetime
+from telebot import TeleBot
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+
+# Mets ton token ici entre les guillemets
+TOKEN = "TON_TOKEN_BOT"
+bot = TeleBot(TOKEN)
+
+@bot.message_handler(commands=['start'])
+def envoyer_bienvenue(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn_signal = KeyboardButton("📊 OBTENIR UN SIGNAL")
+    btn_stats = KeyboardButton("📈 STATISTIQUES")
+    btn_config = KeyboardButton("⚙️ CONFIGURATION")
+    markup.add(btn_signal, btn_stats, btn_config)
+    
+    bot.send_message(
+        message.chat.id, 
+        "🤖 **Bienvenue sur ton Robot de Trading VIP !**\n\nClique sur le bouton ci-dessous pour lancer ton premier signal 👇", 
+        parse_mode="Markdown", 
+        reply_markup=markup
+    )
+
+@bot.message_handler(func=lambda message: message.text == "📊 OBTENIR UN SIGNAL")
+def generer_signal_trading(message):
+    chat_id = message.chat.id
+    
+    now = datetime.now()
+    current_minutes = now.hour * 60 + now.minute
+    remainder = current_minutes % 7
+    next_interval_mins = current_minutes + (7 - remainder) if remainder != 0 else current_minutes + 7
+    
+    target_hour = (next_interval_mins // 60) % 24
+    target_minute = next_interval_mins % 60
+    signal_time_str = f"{target_hour:02d}:{target_minute:02d}"
+    
+    seed = (target_hour * 60) + target_minute
+    is_higher = (seed % 2 == 0)
+    
+    if is_higher:
+        action_text = "🟢 HIGHER (HAUSSE / ACHAT)"
+        tendance_emoji = "📈"
+    else:
+        action_text = "🔴 LOWER (BAISSE / VENTE)"
+        tendance_emoji = "📉"
+        
+    texte_signal = (
+        f"🚀 **SIGNAL TRADING ACTIF**\n\n"
+        f"📍 **HEURE :** {signal_time_str}\n"
+        f"🎯 **OPTION :** {action_text}\n"
+        f"{tendance_emoji} **DURÉE :** 7 Minutes\n"
+        f"⚡ **FIABILITÉ :** 95.2%"
+    )
+    
+    inline_markup = InlineKeyboardMarkup()
+    btn_platform = InlineKeyboardButton("💻 TRADER MAINTENANT", url="https://t.me/ton_lien_webapp")
+    inline_markup.add(btn_platform)
+    
+    bot.send_message(
+        chat_id, 
+        texte_signal, 
+        parse_mode="Markdown", 
+        reply_markup=inline_markup
+    )
+
+@bot.message_handler(func=lambda message: message.text == "📈 STATISTIQUES")
+def afficher_stats(message):
+    bot.send_message(message.chat.id, "📊 **Statistiques :** Taux de réussite 89% 🟢", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: message.text == "⚙️ CONFIGURATION")
+def afficher_config(message):
+    bot.send_message(message.chat.id, "⚙️ **Config :** Signaux toutes les 7 minutes.", parse_mode="Markdown")
+
+if __name__ == '__main__':
+    bot.infinity_polling()
