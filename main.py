@@ -215,7 +215,7 @@ async def valider(update, context):
     user_id_a_valider = int(context.args[0])
     valider_utilisateur(user_id_a_valider)
 
-    keyboard = [[KeyboardButton('📊 OBTENIR UN SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await context.bot.send_message(
