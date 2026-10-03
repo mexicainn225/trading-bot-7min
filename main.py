@@ -12,6 +12,7 @@ from telegram import (
 )
 from telegram.ext import (
     ApplicationBuilder,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
@@ -197,14 +198,90 @@ async def handle_message(update, context):
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
 
-  # Alerte Admin
+  # Alerte Admin avec Boutons Interactifs
+  admin_keyboard = [
+      [
+          InlineKeyboardButton('✅ Valider l\'accès', callback_data=f'val_{user_id}'),
+          InlineKeyboardButton('❌ Mauvais code', callback_data=f'err_{user_id}')
+      ],
+      [
+          InlineKeyboardButton('💰 Rappel Recharge', callback_data=f'recharge_{user_id}')
+      ]
+  ]
+  admin_markup = InlineKeyboardMarkup(admin_keyboard)
+
   await context.bot.send_message(
       chat_id=TON_ID_ADMIN,
       text=(
-          f'🚨 Nouvelle demande :\nUser ID: {user_id}\nID 1win:'
-          f' {message_text}\n\nTape: /valider {user_id}'
+          f'🚨 **Nouvelle demande :**\n'
+          f'👤 User ID: `{user_id}`\n'
+          f'🆔 ID 1win: `{message_text}`'
       ),
+      parse_mode='Markdown',
+      reply_markup=admin_markup,
   )
+
+
+# Gestion des clics sur les boutons admin
+async def admin_callback(update, context):
+  query = update.callback_query
+  if update.effective_user.id != TON_ID_ADMIN:
+    await query.answer("Accès refusé.", show_alert=True)
+    return
+
+  await query.answer()
+  data = query.data
+
+  if data.startswith("val_"):
+    user_id_target = int(data.split("_")[1])
+    valider_utilisateur(user_id_target)
+
+    keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    try:
+      await context.bot.send_message(
+          chat_id=user_id_target,
+          text='✅ Félicitations ! Ton ID a été validé. Tu peux maintenant accéder aux signaux.',
+          reply_markup=markup,
+      )
+    except Exception as e:
+      print(f"Erreur envoi validation utilisateur: {e}")
+
+    await query.edit_message_text(
+        text=query.message.text + "\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**",
+        parse_mode='Markdown'
+    )
+
+  elif data.startswith("err_"):
+    user_id_target = int(data.split("_")[1])
+    try:
+      await context.bot.send_message(
+          chat_id=user_id_target,
+          text='❌ Ce ID n’est pas inscrit avec le code COK225.',
+      )
+    except Exception as e:
+      print(f"Erreur envoi message erreur: {e}")
+
+    await query.edit_message_text(
+        text=query.message.text + "\n\n🔴 **STATUT : MAUVAIS CODE NOTIFIÉ**",
+        parse_mode='Markdown'
+    )
+
+  elif data.startswith("recharge_"):
+    user_id_target = int(data.split("_")[1])
+    try:
+      await context.bot.send_message(
+          chat_id=user_id_target,
+          text='⚠️ Tu es bien inscrit avec le code COK225 ! Recharge toi maintenant pour activer 🚀',
+      )
+    except Exception as e:
+      print(f"Erreur envoi message recharge: {e}")
+
+    await query.edit_message_text(
+        text=query.message.text + "\n\n🟡 **STATUT : RAPPEL RECHARGE ENVOYÉ**",
+        parse_mode='Markdown'
+    )
 
 
 async def valider(update, context):
@@ -242,6 +319,7 @@ if __name__ == '__main__':
   bot_app = ApplicationBuilder().token(TOKEN).build()
   bot_app.add_handler(CommandHandler('start', start))
   bot_app.add_handler(CommandHandler('valider', valider))
+  bot_app.add_handler(CallbackQueryHandler(admin_callback))
   bot_app.add_handler(
       MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
   )
