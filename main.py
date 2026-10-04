@@ -3,7 +3,6 @@ import os
 import random
 from threading import Thread
 from flask import Flask, render_template, request
-from supabase import Client, create_client
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -21,89 +20,39 @@ from telegram.ext import (
 # Configuration Flask pour Render
 app = Flask(__name__, template_folder='templates', static_folder='static')
 TOKEN = os.environ.get('TOKEN')
-TON_ID_ADMIN = 5724620019  # ID Admin configuré
-
-# Informations Supabase intégrées directement
-SUPABASE_URL = 'https://ghhgaooabuddjkpkjbsp.supabase.co'
-SUPABASE_KEY = (
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdo'
-    'aGdhb29hYnVkZGprcGtqYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTQ5NTAsImV4'
-    'cCI6MjA5NTQzMDk1MH0.JNm1sOBUTvjl1m1OXmQVkOh4z5dFkDk-_qieJU1gVC8'
-)
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+TON_ID_ADMIN = 5724620019  # Ton ID Admin
 
 # Images sur ton dépôt GitHub
 PHOTO_HIGHER = 'IMG_6204.jpeg'
 PHOTO_LOWER = 'IMG_6203.jpeg'
 
+# Fichier local pour stocker les IDs validés (remplace Supabase)
+FICHIER_UTILISATEURS = 'utilisateurs_valides.txt'
 
-# ==========================================
-# FONCTIONS SUPABASE CORRIGÉES ET ULTRA-FIABLES
-# ==========================================
+
+def charger_utilisateurs_valides():
+  if not os.path.exists(FICHIER_UTILISATEURS):
+    return set()
+  try:
+    with open(FICHIER_UTILISATEURS, 'r') as f:
+      return set(int(line.strip()) for line in f if line.strip().isdigit())
+  except Exception:
+    return set()
+
+
+def sauvegarder_utilisateur_valide(user_id):
+  users = charger_utilisateurs_valides()
+  users.add(int(user_id))
+  with open(FICHIER_UTILISATEURS, 'w') as f:
+    for uid in users:
+      f.write(f'{uid}\n')
+
+
 def est_valide(user_id):
   if int(user_id) == int(TON_ID_ADMIN):
     return True
-  try:
-    response = (
-        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
-    )
-    data = response.data
-    if data:
-      user_info = data[0]
-      status = str(user_info.get('status', '')).strip().lower()
-      is_vip = user_info.get('is_vip')
-      if is_vip is True or status == 'active':
-        return True
-    return False
-  except Exception as e:
-    print(f'Erreur Supabase est_valide: {e}')
-    return False
-
-
-def ajouter_utilisateur(user_id, id_1win):
-  try:
-    res = (
-        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
-    )
-    if res.data:
-      supabase.table('users').update({
-          'id_1win': str(id_1win),
-          'status': 'pending',
-          'is_vip': False,
-      }).eq('user_id', int(user_id)).execute()
-    else:
-      supabase.table('users').insert({
-          'user_id': int(user_id),
-          'id_1win': str(id_1win),
-          'status': 'pending',
-          'is_vip': False,
-      }).execute()
-  except Exception as e:
-    print(f'Erreur Supabase ajouter_utilisateur: {e}')
-
-
-def valider_utilisateur(user_id):
-  try:
-    # Vérifie si l'utilisateur existe déjà dans la table avant de mettre à jour
-    res = (
-        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
-    )
-    if res.data:
-      supabase.table('users').update({
-          'status': 'active',
-          'is_vip': True,
-      }).eq('user_id', int(user_id)).execute()
-    else:
-      # Si la ligne n'existait pas, on la crée directement en active
-      supabase.table('users').insert({
-          'user_id': int(user_id),
-          'id_1win': 'Validé par Admin',
-          'status': 'active',
-          'is_vip': True,
-      }).execute()
-    print(f'Utilisateur {user_id} validé avec succès dans Supabase.')
-  except Exception as e:
-    print(f'Erreur Supabase valider_utilisateur: {e}')
+  users = charger_utilisateurs_valides()
+  return int(user_id) in users
 
 
 @app.route('/')
@@ -112,7 +61,7 @@ def home():
 
 
 # ==========================================
-# GESTION DU BOT TELEGRAM
+# GESTION DU BOT TELEGRAM AVEC RESTRICTION
 # ==========================================
 async def start(update, context):
   user_id = update.effective_user.id
@@ -120,7 +69,6 @@ async def start(update, context):
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
     await update.message.reply_text(
         '🤖 **Re-bonjour ! Ton accès VIP est actif.**\n\nClique sur le bouton'
         ' ci-dessous pour obtenir ton signal 👇',
@@ -153,7 +101,7 @@ async def handle_message(update, context):
       )
       return
 
-    # --- CALCUL DU SIGNAL (Toutes les 7 min + Martingales) ---
+    # --- CALCUL DU SIGNAL ---
     now = datetime.now()
     current_minutes = now.hour * 60 + now.minute
     remainder = current_minutes % 7
@@ -226,20 +174,17 @@ async def handle_message(update, context):
     )
     return
 
-  # 3. Si l'utilisateur est déjà validé, on l'informe
+  # 3. Si déjà validé
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        '✅ Ton accès est déjà actif ! Utilise les boutons ci-dessous pour'
-        ' obtenir ton signal 👇',
+        '✅ Ton accès est déjà actif ! Utilise les boutons ci-dessous 👇',
         reply_markup=markup,
     )
     return
 
-  # 4. Enregistrement d'un nouvel utilisateur non validé (ID 1win)
-  ajouter_utilisateur(user_id, message_text)
-
+  # 4. Envoi de l'ID 1win à l'admin pour validation
   await update.message.reply_text(
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
@@ -250,12 +195,7 @@ async def handle_message(update, context):
               '✅ Valider l\'accès', callback_data=f'val_{user_id}'
           ),
           InlineKeyboardButton('❌ Mauvais code', callback_data=f'err_{user_id}'),
-      ],
-      [
-          InlineKeyboardButton(
-              '💰 Rappel Recharge', callback_data=f'recharge_{user_id}'
-          )
-      ],
+      ]
   ]
   admin_markup = InlineKeyboardMarkup(admin_keyboard)
 
@@ -271,7 +211,7 @@ async def handle_message(update, context):
   )
 
 
-# Gestion des clics sur les boutons admin
+# Gestion des clics admin
 async def admin_callback(update, context):
   query = update.callback_query
   if update.effective_user.id != TON_ID_ADMIN:
@@ -283,7 +223,7 @@ async def admin_callback(update, context):
 
   if data.startswith('val_'):
     user_id_target = int(data.split('_')[1])
-    valider_utilisateur(user_id_target)
+    sauvegarder_utilisateur_valide(user_id_target)
 
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -298,7 +238,7 @@ async def admin_callback(update, context):
           reply_markup=markup,
       )
     except Exception as e:
-      print(f'Erreur envoi validation utilisateur: {e}')
+      print(f'Erreur envoi validation: {e}')
 
     await query.edit_message_text(
         text=query.message.text + '\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**',
@@ -313,53 +253,11 @@ async def admin_callback(update, context):
           text='❌ Ce ID n’est pas inscrit avec le code COK225.',
       )
     except Exception as e:
-      print(f'Erreur envoi message erreur: {e}')
+      print(f'Erreur envoi erreur: {e}')
 
     await query.edit_message_text(
-        text=query.message.text + '\n\n🔴 **STATUT : MAUVAIS CODE NOTIFIÉ**',
+        text=query.message.text + '\n\n🔴 **STATUT : REFUSÉ**',
         parse_mode='Markdown',
-    )
-
-  elif data.startswith('recharge_'):
-    user_id_target = int(data.split('_')[1])
-    try:
-      await context.bot.send_message(
-          chat_id=user_id_target,
-          text=(
-              '⚠️ Tu es bien inscrit avec le code COK225 ! Recharge toi'
-              ' maintenant pour activer 🚀'
-          ),
-      )
-    except Exception as e:
-      print(f'Erreur envoi message recharge: {e}')
-
-    await query.edit_message_text(
-        text=query.message.text + '\n\n🟡 **STATUT : RAPPEL RECHARGE ENVOYÉ**',
-        parse_mode='Markdown',
-    )
-
-
-async def valider(update, context):
-  if update.effective_user.id != TON_ID_ADMIN:
-    return
-
-  if context.args:
-    user_id_a_valider = int(context.args[0])
-    valider_utilisateur(user_id_a_valider)
-
-    keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
-    markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
-    await context.bot.send_message(
-        chat_id=user_id_a_valider,
-        text=(
-            '✅ Félicitations ! Ton ID a été validé. Tu peux maintenant'
-            ' accéder aux signaux.'
-        ),
-        reply_markup=markup,
-    )
-    await update.message.reply_text(
-        f'Utilisateur {user_id_a_valider} validé avec succès !'
     )
 
 
@@ -373,7 +271,6 @@ if __name__ == '__main__':
 
   bot_app = ApplicationBuilder().token(TOKEN).build()
   bot_app.add_handler(CommandHandler('start', start))
-  bot_app.add_handler(CommandHandler('valider', valider))
   bot_app.add_handler(CallbackQueryHandler(admin_callback))
   bot_app.add_handler(
       MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
