@@ -26,7 +26,7 @@ TON_ID_ADMIN = 5724620019  # Ton ID Admin
 PHOTO_HIGHER = 'IMG_6204.jpeg'
 PHOTO_LOWER = 'IMG_6203.jpeg'
 
-# Fichier local pour stocker les IDs validés (remplace Supabase)
+# Fichier local pour stocker les IDs validés
 FICHIER_UTILISATEURS = 'utilisateurs_valides.txt'
 
 
@@ -184,7 +184,7 @@ async def handle_message(update, context):
     )
     return
 
-  # 4. Envoi de l'ID 1win à l'admin pour validation
+  # 4. Envoi de l'ID 1win à l'admin pour validation avec le bouton Rappel Recharge
   await update.message.reply_text(
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
@@ -195,7 +195,12 @@ async def handle_message(update, context):
               '✅ Valider l\'accès', callback_data=f'val_{user_id}'
           ),
           InlineKeyboardButton('❌ Mauvais code', callback_data=f'err_{user_id}'),
-      ]
+      ],
+      [
+          InlineKeyboardButton(
+              '💰 Rappel Recharge', callback_data=f'rappel_{user_id}'
+          )
+      ],
   ]
   admin_markup = InlineKeyboardMarkup(admin_keyboard)
 
@@ -257,6 +262,26 @@ async def admin_callback(update, context):
 
     await query.edit_message_text(
         text=query.message.text + '\n\n🔴 **STATUT : REFUSÉ**',
+        parse_mode='Markdown',
+    )
+
+  elif data.startswith('rappel_'):
+    user_id_target = int(data.split('_')[1])
+    try:
+      await context.bot.send_message(
+          chat_id=user_id_target,
+          text=(
+              '⚠️ **Rappel :** Tu n\'as pas encore effectué ta recharge sur'
+              ' ton compte 1win avec le code promo **COK225** pour débloquer tes'
+              ' signaux. Fais ta recharge puis renvoie ton ID !'
+          ),
+          parse_mode='Markdown',
+      )
+    except Exception as e:
+      print(f'Erreur envoi rappel: {e}')
+
+    await query.edit_message_text(
+        text=query.message.text + '\n\n🟡 **STATUT : RAPPEL ENVOYÉ**',
         parse_mode='Markdown',
     )
 
