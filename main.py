@@ -46,7 +46,7 @@ def est_valide(user_id):
     data = response.data
     if data and len(data) > 0:
       user_info = data[0]
-      if user_info.get('is_vip'] == True or user_info.get('status') == 'active':
+      if user_info.get('is_vip') == True or user_info.get('status') == 'active':
         return True
     return False
   except Exception as e:
@@ -56,7 +56,6 @@ def est_valide(user_id):
 
 def ajouter_utilisateur(user_id, id_1win):
   try:
-    # 1. On vérifie si l'utilisateur existe déjà
     existing = (
         supabase.table('users')
         .select('*')
@@ -64,14 +63,12 @@ def ajouter_utilisateur(user_id, id_1win):
         .execute()
     )
     if existing.data and len(existing.data) > 0:
-      # S'il existe, on met à jour son ID 1win et on remet le statut à pending
       supabase.table('users').update({
           'id_1win': str(id_1win),
           'status': 'pending',
           'is_vip': False,
       }).eq('user_id', str(user_id)).execute()
     else:
-      # S'il n'existe pas, on l'ajoute proprement
       supabase.table('users').insert({
           'user_id': str(user_id),
           'id_1win': str(id_1win),
