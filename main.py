@@ -40,7 +40,6 @@ def est_valide(user_id):
   if int(user_id) == int(TON_ID_ADMIN):
     return True
   try:
-    # On récupère toutes les lignes de l'utilisateur pour contourner les doublons
     response = (
         supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
@@ -49,7 +48,6 @@ def est_valide(user_id):
       for user_info in data:
         status = str(user_info.get('status', '')).strip().lower()
         is_vip = user_info.get('is_vip')
-        # Si une seule ligne est active ou VIP, l'accès est accordé
         if is_vip is True or status == 'active':
           return True
     return False
@@ -68,14 +66,12 @@ def ajouter_utilisateur(user_id, id_1win):
         if str(row.get('status', '')).strip().lower() == 'active':
           return  # S'il est déjà actif quelque part, on ne touche à rien
 
-      # Sinon, on met à jour la ligne existante
       supabase.table('users').update({
           'id_1win': str(id_1win),
           'status': 'pending',
           'is_vip': False,
       }).eq('user_id', int(user_id)).execute()
     else:
-      # S'il n'existe pas du tout, on l'ajoute
       supabase.table('users').insert({
           'user_id': int(user_id),
           'id_1win': str(id_1win),
@@ -132,6 +128,7 @@ async def handle_message(update, context):
   user_id = update.effective_user.id
   message_text = update.message.text
 
+  # 1. Gestion du bouton NEW SIGNAL
   if message_text == '📊 NEW SIGNAL':
     if not est_valide(user_id):
       await update.message.reply_text(
@@ -203,6 +200,7 @@ async def handle_message(update, context):
       )
     return
 
+  # 2. Gestion du bouton STATISTIQUES
   elif message_text == '📈 STATISTIQUES':
     if not est_valide(user_id):
       await update.message.reply_text('⛔ Accès restreint.')
@@ -213,7 +211,7 @@ async def handle_message(update, context):
     )
     return
 
-  # Si l'utilisateur est déjà validé, on ne réinitialise pas son compte s'il tape un texte
+  # 3. Sécurité : Si l'utilisateur est déjà validé, on ignore ses messages texte aléatoires
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -224,7 +222,7 @@ async def handle_message(update, context):
     )
     return
 
-  # Sinon, c'en est un nouveau qui envoie son ID 1win
+  # 4. Enregistrement d'un nouvel utilisateur non validé (ID 1win)
   ajouter_utilisateur(user_id, message_text)
 
   await update.message.reply_text(
