@@ -81,11 +81,10 @@ def ajouter_utilisateur(user_id, id_1win):
 
 def valider_utilisateur(user_id):
   try:
-    # CORRECTION ICI : Utilisation de upsert pour forcer l'activation VIP à coup sûr
-    supabase.table('users').upsert(
-        {'user_id': str(user_id), 'status': 'active', 'is_vip': True},
-        on_conflict='user_id',
-    ).execute()
+    # Mise à jour propre du statut VIP sans toucher à l'ID 1win existant
+    supabase.table('users').update(
+        {'status': 'active', 'is_vip': True}
+    ).eq('user_id', str(user_id)).execute()
   except Exception as e:
     print(f'Erreur Supabase valider_utilisateur: {e}')
 
