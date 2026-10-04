@@ -24,8 +24,12 @@ TOKEN = os.environ.get('TOKEN')
 TON_ID_ADMIN = 5724620019  # ID Admin configuré
 
 # Informations Supabase intégrées directement
-SUPABASE_URL = 'https://uyruufvdezefffimcped.supabase.co/'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5cnV1ZnZkZXplZmZmaW1jcGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzkwMTAsImV4cCI6MjA5NzY1NTAxMH0.JNm1sOBUTvjl1m1OXmQVkOh4z5dFkDk-_qieJU1gVC8'
+SUPABASE_URL = 'https://ghhgaooabuddjkpkjbsp.supabase.co'
+SUPABASE_KEY = (
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdo'
+    'aGdhb29hYnVkZGprcGtqYnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTQ5NTAsImV4'
+    'cCI6MjA5NTQzMDk1MH0.JNm1sOBUTvjl1m1OXmQVkOh4z5dFkDk-_qieJU1gVC8'
+)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Images sur ton dépôt GitHub
@@ -63,8 +67,11 @@ def ajouter_utilisateur(user_id, id_1win):
     )
     if res.data:
       for row in res.data:
-        if str(row.get('status', '')).strip().lower() == 'active':
-          return  # S'il est déjà actif quelque part, on ne touche à rien
+        if (
+            str(row.get('status', '')).strip().lower() == 'active'
+            or row.get('is_vip') is True
+        ):
+          return  # S'il est déjà validé, on ne touche à rien
 
       supabase.table('users').update({
           'id_1win': str(id_1win),
@@ -211,7 +218,7 @@ async def handle_message(update, context):
     )
     return
 
-  # 3. Sécurité : Si l'utilisateur est déjà validé, on ignore ses messages texte aléatoires
+  # 3. Sécurité : Si l'utilisateur est déjà validé, on ignore ses messages texte
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
