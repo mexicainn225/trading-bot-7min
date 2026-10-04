@@ -34,9 +34,11 @@ PHOTO_LOWER = 'IMG_6203.jpeg'  # Image rouge (Lower)
 
 
 # ==========================================
-# FONCTIONS SUPABASE DIRECTES
+# FONCTIONS SUPABASE DIRECTES (CORRIGÉES)
 # ==========================================
 def est_valide(user_id):
+  if user_id == TON_ID_ADMIN:
+    return True
   try:
     response = (
         supabase.table('users').select('*').eq('user_id', str(user_id)).execute()
@@ -59,7 +61,7 @@ def ajouter_utilisateur(user_id, id_1win):
         'id_1win': str(id_1win),
         'status': 'pending',
         'is_vip': False,
-    }).execute()
+    }, on_conflict='user_id').execute()
   except Exception as e:
     print(f'Erreur Supabase ajouter_utilisateur: {e}')
 
