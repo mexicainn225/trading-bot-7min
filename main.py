@@ -159,7 +159,7 @@ async def handle_message(update, context):
         f'📊 **SIGNAL TRADING ACTIF**\n\n'
         f'💱 **ACTIF :** AUD/CAD (OTC)\n'
         f'📍 **HEURE D’ENTRÉE:** {signal_time_str}\n'
-        f'⏳ *Place ton trade 50 secondes avant la minute!*\n\n'
+        f'⏳ *Place ton trade a la minute juste!*\n\n'
         f'🎯 **OPTION :** {action_text}\n'
         f'{tendance_emoji} **MARTINGALE 1 :** {matingal1_str}\n'
         f'{tendance_emoji} **MARTINGALE 2 :** {matingal2_str}\n'
