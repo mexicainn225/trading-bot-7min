@@ -40,18 +40,18 @@ def est_valide(user_id):
   if int(user_id) == int(TON_ID_ADMIN):
     return True
   try:
+    # On récupère toutes les lignes de l'utilisateur pour contourner les doublons
     response = (
         supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
     data = response.data
-    if data and len(data) > 0:
-      user_info = data[0]
-      status = str(user_info.get('status', '')).strip().lower()
-      is_vip = user_info.get('is_vip')
-
-      # Vérification stricte et souple à la fois
-      if is_vip is True or status == 'active':
-        return True
+    if data:
+      for user_info in data:
+        status = str(user_info.get('status', '')).strip().lower()
+        is_vip = user_info.get('is_vip')
+        # Si une seule ligne est active ou VIP, l'accès est accordé
+        if is_vip is True or status == 'active':
+          return True
     return False
   except Exception as e:
     print(f'Erreur Supabase est_valide: {e}')
@@ -60,22 +60,28 @@ def est_valide(user_id):
 
 def ajouter_utilisateur(user_id, id_1win):
   try:
-    # On vérifie d'abord si l'utilisateur existe déjà pour ne pas écraser son statut s'il est déjà actif
     res = (
-        supabase.table('users').select('status').eq('user_id', int(user_id)).execute()
+        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
-    if res.data and str(res.data[0].get('status', '')).strip().lower() == 'active':
-      return  # S'il est déjà actif, on ne touche à rien !
+    if res.data:
+      for row in res.data:
+        if str(row.get('status', '')).strip().lower() == 'active':
+          return  # S'il est déjà actif quelque part, on ne touche à rien
 
-    supabase.table('users').upsert(
-        {
-            'user_id': int(user_id),
-            'id_1win': str(id_1win),
-            'status': 'pending',
-            'is_vip': False,
-        },
-        on_conflict='user_id',
-    ).execute()
+      # Sinon, on met à jour la ligne existante
+      supabase.table('users').update({
+          'id_1win': str(id_1win),
+          'status': 'pending',
+          'is_vip': False,
+      }).eq('user_id', int(user_id)).execute()
+    else:
+      # S'il n'existe pas du tout, on l'ajoute
+      supabase.table('users').insert({
+          'user_id': int(user_id),
+          'id_1win': str(id_1win),
+          'status': 'pending',
+          'is_vip': False,
+      }).execute()
   except Exception as e:
     print(f'Erreur Supabase ajouter_utilisateur: {e}')
 
@@ -207,7 +213,7 @@ async def handle_message(update, context):
     )
     return
 
-  # Si l'utilisateur est déjà validé, on ne réinitialise surtout pas son compte s'il tape un texte
+  # Si l'utilisateur est déjà validé, on ne réinitialise pas son compte s'il tape un texte
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
