@@ -66,14 +66,12 @@ def ajouter_utilisateur(user_id, id_1win):
         supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
     if res.data:
-      # Met à jour l'ID 1win si l'utilisateur existe déjà
       supabase.table('users').update({
           'id_1win': str(id_1win),
           'status': 'pending',
           'is_vip': False,
       }).eq('user_id', int(user_id)).execute()
     else:
-      # Crée la ligne proprement
       supabase.table('users').insert({
           'user_id': int(user_id),
           'id_1win': str(id_1win),
@@ -86,9 +84,24 @@ def ajouter_utilisateur(user_id, id_1win):
 
 def valider_utilisateur(user_id):
   try:
-    supabase.table('users').update(
-        {'status': 'active', 'is_vip': True}
-    ).eq('user_id', int(user_id)).execute()
+    # Vérifie si l'utilisateur existe déjà dans la table avant de mettre à jour
+    res = (
+        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
+    )
+    if res.data:
+      supabase.table('users').update({
+          'status': 'active',
+          'is_vip': True,
+      }).eq('user_id', int(user_id)).execute()
+    else:
+      # Si la ligne n'existait pas, on la crée directement en active
+      supabase.table('users').insert({
+          'user_id': int(user_id),
+          'id_1win': 'Validé par Admin',
+          'status': 'active',
+          'is_vip': True,
+      }).execute()
+    print(f'Utilisateur {user_id} validé avec succès dans Supabase.')
   except Exception as e:
     print(f'Erreur Supabase valider_utilisateur: {e}')
 
@@ -289,7 +302,7 @@ async def admin_callback(update, context):
 
     await query.edit_message_text(
         text=query.message.text + '\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**',
-        parse_Mode='Markdown',
+        parse_mode='Markdown',
     )
 
   elif data.startswith('err_'):
