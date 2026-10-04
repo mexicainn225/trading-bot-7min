@@ -33,12 +33,12 @@ SUPABASE_KEY = (
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Images sur ton dépôt GitHub
-PHOTO_HIGHER = 'IMG_6204.jpeg'  # Image verte (Higher)
-PHOTO_LOWER = 'IMG_6203.jpeg'  # Image rouge (Lower)
+PHOTO_HIGHER = 'IMG_6204.jpeg'
+PHOTO_LOWER = 'IMG_6203.jpeg'
 
 
 # ==========================================
-# FONCTIONS SUPABASE ROBUSTES ET SÉCURISÉES
+# FONCTIONS SUPABASE CORRIGÉES ET ULTRA-FIABLES
 # ==========================================
 def est_valide(user_id):
   if int(user_id) == int(TON_ID_ADMIN):
@@ -49,11 +49,11 @@ def est_valide(user_id):
     )
     data = response.data
     if data:
-      for user_info in data:
-        status = str(user_info.get('status', '')).strip().lower()
-        is_vip = user_info.get('is_vip')
-        if is_vip is True or status == 'active':
-          return True
+      user_info = data[0]
+      status = str(user_info.get('status', '')).strip().lower()
+      is_vip = user_info.get('is_vip')
+      if is_vip is True or status == 'active':
+        return True
     return False
   except Exception as e:
     print(f'Erreur Supabase est_valide: {e}')
@@ -66,19 +66,14 @@ def ajouter_utilisateur(user_id, id_1win):
         supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
     if res.data:
-      for row in res.data:
-        if (
-            str(row.get('status', '')).strip().lower() == 'active'
-            or row.get('is_vip') is True
-        ):
-          return  # S'il est déjà validé, on ne touche à rien
-
+      # Met à jour l'ID 1win si l'utilisateur existe déjà
       supabase.table('users').update({
           'id_1win': str(id_1win),
           'status': 'pending',
           'is_vip': False,
       }).eq('user_id', int(user_id)).execute()
     else:
+      # Crée la ligne proprement
       supabase.table('users').insert({
           'user_id': int(user_id),
           'id_1win': str(id_1win),
@@ -218,7 +213,7 @@ async def handle_message(update, context):
     )
     return
 
-  # 3. Sécurité : Si l'utilisateur est déjà validé, on ignore ses messages texte
+  # 3. Si l'utilisateur est déjà validé, on l'informe
   if est_valide(user_id):
     keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -294,7 +289,7 @@ async def admin_callback(update, context):
 
     await query.edit_message_text(
         text=query.message.text + '\n\n🟢 **STATUT : VALIDÉ & ACTIVÉ**',
-        parse_mode='Markdown',
+        parse_Mode='Markdown',
     )
 
   elif data.startswith('err_'):
