@@ -41,7 +41,7 @@ def est_valide(user_id):
     return True
   try:
     response = (
-        supabase.table('users').select('*').eq('user_id', str(user_id)).execute()
+        supabase.table('users').select('*').eq('user_id', int(user_id)).execute()
     )
     data = response.data
     if data and len(data) > 0:
@@ -56,35 +56,25 @@ def est_valide(user_id):
 
 def ajouter_utilisateur(user_id, id_1win):
   try:
-    existing = (
-        supabase.table('users')
-        .select('*')
-        .eq('user_id', str(user_id))
-        .execute()
-    )
-    if existing.data and len(existing.data) > 0:
-      supabase.table('users').update({
-          'id_1win': str(id_1win),
-          'status': 'pending',
-          'is_vip': False,
-      }).eq('user_id', str(user_id)).execute()
-    else:
-      supabase.table('users').insert({
-          'user_id': str(user_id),
-          'id_1win': str(id_1win),
-          'status': 'pending',
-          'is_vip': False,
-      }).execute()
+    supabase.table('users').upsert(
+        {
+            'user_id': int(user_id),
+            'id_1win': str(id_1win),
+            'status': 'pending',
+            'is_vip': False,
+        },
+        on_conflict='user_id',
+    ).execute()
   except Exception as e:
     print(f'Erreur Supabase ajouter_utilisateur: {e}')
 
 
 def valider_utilisateur(user_id):
   try:
-    # Mise à jour propre du statut VIP sans toucher à l'ID 1win existant
-    supabase.table('users').update(
-        {'status': 'active', 'is_vip': True}
-    ).eq('user_id', str(user_id)).execute()
+    supabase.table('users').upsert(
+        {'user_id': int(user_id), 'status': 'active', 'is_vip': True},
+        on_conflict='user_id',
+    ).execute()
   except Exception as e:
     print(f'Erreur Supabase valider_utilisateur: {e}')
 
