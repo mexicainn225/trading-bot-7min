@@ -34,10 +34,10 @@ PHOTO_LOWER = 'IMG_6203.jpeg'  # Image rouge (Lower)
 
 
 # ==========================================
-# FONCTIONS SUPABASE ROBUSTES
+# FONCTIONS SUPABASE ROBUSTES ET SÉCURISÉES
 # ==========================================
 def est_valide(user_id):
-  if user_id == TON_ID_ADMIN:
+  if int(user_id) == int(TON_ID_ADMIN):
     return True
   try:
     response = (
@@ -46,7 +46,11 @@ def est_valide(user_id):
     data = response.data
     if data and len(data) > 0:
       user_info = data[0]
-      if user_info.get('is_vip') == True or user_info.get('status') == 'active':
+      status = str(user_info.get('status', '')).strip().lower()
+      is_vip = user_info.get('is_vip')
+
+      # Vérification stricte et souple à la fois
+      if is_vip is True or status == 'active':
         return True
     return False
   except Exception as e:
@@ -56,6 +60,13 @@ def est_valide(user_id):
 
 def ajouter_utilisateur(user_id, id_1win):
   try:
+    # On vérifie d'abord si l'utilisateur existe déjà pour ne pas écraser son statut s'il est déjà actif
+    res = (
+        supabase.table('users').select('status').eq('user_id', int(user_id)).execute()
+    )
+    if res.data and str(res.data[0].get('status', '')).strip().lower() == 'active':
+      return  # S'il est déjà actif, on ne touche à rien !
+
     supabase.table('users').upsert(
         {
             'user_id': int(user_id),
@@ -146,9 +157,7 @@ async def handle_message(update, context):
     matingal2_str = (base_time + timedelta(minutes=4)).strftime('%H:%M')
     matingal3_str = (base_time + timedelta(minutes=6)).strftime('%H:%M')
 
-    # Choix 100% aléatoire (Higher ou Lower)
     is_higher = random.choice([True, False])
-
     fiabilite = round(random.uniform(85.0, 99.9), 1)
 
     if is_higher:
@@ -198,14 +207,24 @@ async def handle_message(update, context):
     )
     return
 
-  # Enregistrement de l'ID 1win dans Supabase
+  # Si l'utilisateur est déjà validé, on ne réinitialise surtout pas son compte s'il tape un texte
+  if est_valide(user_id):
+    keyboard = [[KeyboardButton('📊 NEW SIGNAL'), KeyboardButton('📈 STATISTIQUES')]]
+    markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(
+        '✅ Ton accès est déjà actif ! Utilise les boutons ci-dessous pour'
+        ' obtenir ton signal 👇',
+        reply_markup=markup,
+    )
+    return
+
+  # Sinon, c'en est un nouveau qui envoie son ID 1win
   ajouter_utilisateur(user_id, message_text)
 
   await update.message.reply_text(
       "ID reçu ! J'ai transmis ta demande à l'admin. Attends la validation. ✅"
   )
 
-  # Alerte Admin avec 3 Boutons Interactifs
   admin_keyboard = [
       [
           InlineKeyboardButton(
