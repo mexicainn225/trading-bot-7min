@@ -71,10 +71,9 @@ def ajouter_utilisateur(user_id, id_1win):
 
 def valider_utilisateur(user_id):
   try:
-    supabase.table('users').upsert(
-        {'user_id': int(user_id), 'status': 'active', 'is_vip': True},
-        on_conflict='user_id',
-    ).execute()
+    supabase.table('users').update(
+        {'status': 'active', 'is_vip': True}
+    ).eq('user_id', int(user_id)).execute()
   except Exception as e:
     print(f'Erreur Supabase valider_utilisateur: {e}')
 
