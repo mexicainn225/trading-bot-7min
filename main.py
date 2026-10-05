@@ -123,8 +123,15 @@ async def handle_message(update, context):
     matingal2_str = (base_time + timedelta(minutes=4)).strftime('%H:%M')
     matingal3_str = (base_time + timedelta(minutes=6)).strftime('%H:%M')
 
+    # Utilisation de l'heure cible comme graine (seed) pour que le signal soit le même pour tous
+    seed_value = target_hour * 100 + target_minute
+    random.seed(seed_value)
+
     is_higher = random.choice([True, False])
     fiabilite = round(random.uniform(85.0, 99.9), 1)
+
+    # Réinitialisation de l'aléas du système
+    random.seed()
 
     if is_higher:
       action_text = '🟢 HIGHER (HAUSSE / ACHAT)'
