@@ -79,7 +79,7 @@ async def start(update, context):
     message = (
         'Bienvenue sur le bot 1win 🚀\n\n'
         'Pour débloquer tes accès, suis ces étapes :\n\n'
-        '1️⃣ Inscris-toi ici : https://lkbb.cc/78634e\n'
+        '1️⃣ Inscris-toi ici : https://one-vv8247.com/trading?p=tju2\n'
         '2️⃣ Utilise le code promo : COK225\n'
         '3️⃣ Effectue une recharge sur ton compte.\n'
         '4️⃣ Envoie ton ID 1win ici pour validation.'
@@ -144,7 +144,7 @@ async def handle_message(update, context):
 
     texte_signal = (
         f'📊 **SIGNAL TRADING ACTIF**\n\n'
-        f'💱 **ACTIF :** AUD/CAD (OTC)\n'
+        f'💱 **ACTIF :** EUR/CAD (OTC)\n'
         f'📍 **HEURE D’ENTRÉE:** {signal_time_str}\n'
         f'⏳ *Place ton trade a la minute juste!*\n\n'
         f'🎯 **OPTION :** {action_text}\n'
@@ -156,7 +156,8 @@ async def handle_message(update, context):
 
     inline_markup = InlineKeyboardMarkup([[
         InlineKeyboardButton(
-            '💻 TRADER MAINTENANT', url='https://lkbb.cc/78634e'
+            '💻 TRADER MAINTENANT',
+            url='https://one-vv8247.com/trading?p=tju2',
         )
     ]])
 
